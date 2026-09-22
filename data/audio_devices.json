@@ -1,0 +1,93 @@
+{
+  "devices": [
+    {
+      "device_id": 0,
+      "name": "Microsoft Sound Mapper - Input",
+      "rms": 12.143604278564453,
+      "peak": 144.0
+    },
+    {
+      "device_id": 1,
+      "name": "Microphone Array (Realtek(R) Au",
+      "rms": 12.254770278930664,
+      "peak": 167.0
+    },
+    {
+      "device_id": 2,
+      "name": "AI Noise-cancelling Input (ASUS",
+      "rms": 0.4789854884147644,
+      "peak": 1.0
+    },
+    {
+      "device_id": 6,
+      "name": "Primary Sound Capture Driver",
+      "rms": 12.770794868469238,
+      "peak": 165.0
+    },
+    {
+      "device_id": 7,
+      "name": "Microphone Array (Realtek(R) Audio)",
+      "rms": 12.338359832763672,
+      "peak": 200.0
+    },
+    {
+      "device_id": 8,
+      "name": "AI Noise-cancelling Input (ASUS Utility)",
+      "rms": 0.4789854884147644,
+      "peak": 1.0
+    },
+    {
+      "device_id": 14,
+      "name": "AI Noise-cancelling Input (ASUS Utility)",
+      "error": "Error opening InputStream: Invalid sample rate [PaErrorCode -9997]"
+    },
+    {
+      "device_id": 15,
+      "name": "Microphone Array (Realtek(R) Audio)",
+      "error": "Error opening InputStream: Invalid sample rate [PaErrorCode -9997]"
+    },
+    {
+      "device_id": 16,
+      "name": "Microphone Array (Realtek HD Audio Mic Array input)",
+      "error": "Error opening InputStream: Invalid device [PaErrorCode -9996]"
+    },
+    {
+      "device_id": 17,
+      "name": "Stereo Mix (Realtek HD Audio Stereo input)",
+      "error": "Error opening InputStream: Invalid device [PaErrorCode -9996]"
+    },
+    {
+      "device_id": 18,
+      "name": "Microphone (Realtek HD Audio Mic input)",
+      "error": "Error opening InputStream: Invalid device [PaErrorCode -9996]"
+    },
+    {
+      "device_id": 21,
+      "name": "PC Speaker (Realtek HD Audio output with SST)",
+      "rms": 0,
+      "peak": 0
+    },
+    {
+      "device_id": 24,
+      "name": "PC Speaker (Realtek HD Audio 2nd output with SST)",
+      "rms": 0,
+      "peak": 0
+    },
+    {
+      "device_id": 25,
+      "name": "AI Noise-cancelling Input (Intelligo VAC (W))",
+      "error": "Error opening InputStream: Sample format not supported [PaErrorCode -9994]"
+    },
+    {
+      "device_id": 27,
+      "name": "System Virtual Line (Intelligo VAC (W))",
+      "error": "Error opening InputStream: Sample format not supported [PaErrorCode -9994]"
+    }
+  ],
+  "best": {
+    "device_id": 6,
+    "name": "Primary Sound Capture Driver",
+    "rms": 12.770794868469238,
+    "peak": 165.0
+  }
+}

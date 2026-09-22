@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Ninja Clang/GCC C++20",
+    "preferredGenerator": {
+      "name": "Ninja"
+    }
+  }
+]

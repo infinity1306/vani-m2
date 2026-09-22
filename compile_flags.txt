@@ -1,0 +1,12 @@
+-std=c++20
+-I.
+-I./contracts
+-I./runtime
+-I./observability
+-I./config
+-I./adapters
+-I./services
+-I./tests
+-Wall
+-Wextra
+-Wno-unknown-pragmas

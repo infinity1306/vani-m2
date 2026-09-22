@@ -1,0 +1,27 @@
+{
+  "model_name": "vani_dedicated_neural_kws",
+  "model_version": "1.0.0-phase6b",
+  "wake_word": "VANI",
+  "sample_rate": 16000,
+  "input_format": "pcm_f32le_16k_mono",
+  "model_hash": "e4b7a1c9f280d3a5",
+  "calibrated_threshold": 0.65,
+  "training_dataset_version": "vani-corpus-v1.0",
+  "is_dedicated_model": true,
+  "architecture_type": "custom_vani_acoustic_classifier",
+  "target_false_alarm_rate": "< 0.5 per 24 hours",
+  "confusable_set": [
+    "Pani",
+    "Rani",
+    "Mani",
+    "Nani",
+    "Vany",
+    "Van",
+    "Barani",
+    "Varun",
+    "Vayu",
+    "Money",
+    "Sunny",
+    "Any"
+  ]
+}

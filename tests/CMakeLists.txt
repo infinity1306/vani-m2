@@ -1,0 +1,242 @@
+# Tests build definition
+
+add_executable(test_phase1_validation
+    unit/test_result.cpp
+    unit/test_cancellation.cpp
+    contract/test_contract_replaceability.cpp
+    integration/test_runtime_lifecycle.cpp
+    security/test_policy_permissions.cpp
+    architecture/test_architecture_boundaries.cpp
+)
+target_link_libraries(test_phase1_validation PRIVATE vani_core)
+add_test(NAME test_phase1_validation COMMAND test_phase1_validation)
+
+add_executable(test_phase2_units unit/test_phase2_units.cpp)
+target_link_libraries(test_phase2_units PRIVATE vani_core)
+add_test(NAME test_phase2_units COMMAND test_phase2_units)
+
+add_executable(test_phase2_concurrency concurrency/test_phase2_concurrency.cpp)
+target_link_libraries(test_phase2_concurrency PRIVATE vani_core)
+add_test(NAME test_phase2_concurrency COMMAND test_phase2_concurrency)
+
+add_executable(test_phase2_reference_flow integration/test_phase2_reference_flow.cpp)
+target_link_libraries(test_phase2_reference_flow PRIVATE vani_core)
+add_test(NAME test_phase2_reference_flow COMMAND test_phase2_reference_flow)
+
+add_test(NAME test_phase3_audio COMMAND test_phase3_audio)
+add_test(NAME test_phase3_voice_pipeline COMMAND test_phase3_voice_pipeline)
+add_test(NAME test_phase3_reference_flow COMMAND test_phase3_reference_flow)
+
+add_test(NAME test_phase4_capabilities COMMAND test_phase4_capabilities)
+add_test(NAME test_phase4_security COMMAND test_phase4_security)
+add_test(NAME test_phase4_reference_flows COMMAND test_phase4_reference_flows)
+
+add_test(NAME test_phase5a_real_voice COMMAND test_phase5a_real_voice)
+
+# Phase 5B Unit Tests
+add_executable(test_phase5b_voice_metrics unit/test_phase5b_voice_metrics.cpp)
+target_link_libraries(test_phase5b_voice_metrics PRIVATE vani_core)
+add_test(NAME test_phase5b_voice_metrics COMMAND test_phase5b_voice_metrics)
+
+# Phase 5C Unit Tests
+add_executable(test_phase5c_stt_bakeoff unit/test_phase5c_stt_bakeoff.cpp)
+target_link_libraries(test_phase5c_stt_bakeoff PRIVATE vani_core)
+add_test(NAME test_phase5c_stt_bakeoff COMMAND test_phase5c_stt_bakeoff)
+
+# Phase 5D Unit Tests
+add_executable(test_phase5d_whisper_validation unit/test_phase5d_whisper_validation.cpp)
+target_link_libraries(test_phase5d_whisper_validation PRIVATE vani_core)
+add_test(NAME test_phase5d_whisper_validation COMMAND test_phase5d_whisper_validation)
+
+# Phase 6A Wake-Word & Gated Voice Pipeline Unit Tests
+add_executable(test_phase6a_wakeword_gating unit/test_phase6a_wakeword_gating.cpp)
+target_link_libraries(test_phase6a_wakeword_gating PRIVATE vani_core)
+add_test(NAME test_phase6a_wakeword_gating COMMAND test_phase6a_wakeword_gating)
+
+# Phase 6B Dedicated VANI Wake-Word Model Unit Tests
+add_executable(test_phase6b_vani_wakeword unit/test_phase6b_vani_wakeword.cpp)
+target_link_libraries(test_phase6b_vani_wakeword PRIVATE vani_core)
+add_test(NAME test_phase6b_vani_wakeword COMMAND test_phase6b_vani_wakeword)
+
+# Phase 6C Offline TTS Subsystem & Bake-Off Unit Tests
+add_executable(test_phase6c_tts unit/test_phase6c_tts.cpp)
+target_link_libraries(test_phase6c_tts PRIVATE vani_core)
+add_test(NAME test_phase6c_tts COMMAND test_phase6c_tts)
+
+# Phase 6D End-to-End Voice Loop Unit Tests
+add_executable(test_phase6d_voice_loop unit/test_phase6d_voice_loop.cpp)
+target_link_libraries(test_phase6d_voice_loop PRIVATE vani_core)
+add_test(NAME test_phase6d_voice_loop COMMAND test_phase6d_voice_loop)
+# Phase 7 Controlled Agentic Execution Layer Tests
+add_executable(test_phase7_agent_contracts unit/test_phase7_agent_contracts.cpp)
+target_link_libraries(test_phase7_agent_contracts PRIVATE vani_core)
+add_test(NAME test_phase7_agent_contracts COMMAND test_phase7_agent_contracts)
+
+add_executable(test_phase7_plan_validation unit/test_phase7_plan_validation.cpp)
+target_link_libraries(test_phase7_plan_validation PRIVATE vani_core)
+add_test(NAME test_phase7_plan_validation COMMAND test_phase7_plan_validation)
+
+add_executable(test_phase7_policy_boundary unit/test_phase7_policy_boundary.cpp)
+target_link_libraries(test_phase7_policy_boundary PRIVATE vani_core)
+add_test(NAME test_phase7_policy_boundary COMMAND test_phase7_policy_boundary)
+
+add_executable(test_phase7_scheduler unit/test_phase7_scheduler.cpp)
+target_link_libraries(test_phase7_scheduler PRIVATE vani_core)
+add_test(NAME test_phase7_scheduler COMMAND test_phase7_scheduler)
+
+add_executable(test_phase7_cancellation unit/test_phase7_cancellation.cpp)
+target_link_libraries(test_phase7_cancellation PRIVATE vani_core)
+add_test(NAME test_phase7_cancellation COMMAND test_phase7_cancellation)
+
+add_executable(test_phase7_timeout unit/test_phase7_timeout.cpp)
+target_link_libraries(test_phase7_timeout PRIVATE vani_core)
+add_test(NAME test_phase7_timeout COMMAND test_phase7_timeout)
+
+add_executable(test_phase7_replanning unit/test_phase7_replanning.cpp)
+target_link_libraries(test_phase7_replanning PRIVATE vani_core)
+add_test(NAME test_phase7_replanning COMMAND test_phase7_replanning)
+
+add_executable(test_phase7_memory unit/test_phase7_memory.cpp)
+target_link_libraries(test_phase7_memory PRIVATE vani_core)
+add_test(NAME test_phase7_memory COMMAND test_phase7_memory)
+
+add_executable(test_phase7_fast_path_routing unit/test_phase7_fast_path_routing.cpp)
+target_link_libraries(test_phase7_fast_path_routing PRIVATE vani_core)
+add_test(NAME test_phase7_fast_path_routing COMMAND test_phase7_fast_path_routing)
+
+add_executable(test_phase7_agent_execution integration/test_phase7_agent_execution.cpp)
+target_link_libraries(test_phase7_agent_execution PRIVATE vani_core)
+add_test(NAME test_phase7_agent_execution COMMAND test_phase7_agent_execution)
+
+# Phase 7B Real Agent & Local LLM Integration Tests
+add_executable(test_phase7b_real_llm_inference integration/test_phase7b_real_llm_inference.cpp)
+target_link_libraries(test_phase7b_real_llm_inference PRIVATE vani_core)
+add_test(NAME test_phase7b_real_llm_inference COMMAND test_phase7b_real_llm_inference)
+
+add_executable(test_phase7b_structured_plan_generation integration/test_phase7b_structured_plan_generation.cpp)
+target_link_libraries(test_phase7b_structured_plan_generation PRIVATE vani_core)
+add_test(NAME test_phase7b_structured_plan_generation COMMAND test_phase7b_structured_plan_generation)
+
+add_executable(test_phase7b_real_toolgateway integration/test_phase7b_real_toolgateway.cpp)
+target_link_libraries(test_phase7b_real_toolgateway PRIVATE vani_core)
+add_test(NAME test_phase7b_real_toolgateway COMMAND test_phase7b_real_toolgateway)
+
+add_executable(test_phase7b_real_windows_execution integration/test_phase7b_real_windows_execution.cpp)
+target_link_libraries(test_phase7b_real_windows_execution PRIVATE vani_core)
+add_test(NAME test_phase7b_real_windows_execution COMMAND test_phase7b_real_windows_execution)
+
+add_executable(test_phase7b_independent_verification integration/test_phase7b_independent_verification.cpp)
+target_link_libraries(test_phase7b_independent_verification PRIVATE vani_core)
+add_test(NAME test_phase7b_independent_verification COMMAND test_phase7b_independent_verification)
+
+add_executable(test_phase7b_real_multistep_agent integration/test_phase7b_real_multistep_agent.cpp)
+target_link_libraries(test_phase7b_real_multistep_agent PRIVATE vani_core)
+add_test(NAME test_phase7b_real_multistep_agent COMMAND test_phase7b_real_multistep_agent)
+
+add_executable(test_phase7b_real_replanning integration/test_phase7b_real_replanning.cpp)
+target_link_libraries(test_phase7b_real_replanning PRIVATE vani_core)
+add_test(NAME test_phase7b_real_replanning COMMAND test_phase7b_real_replanning)
+
+add_executable(test_phase7b_policy_boundary_real_llm integration/test_phase7b_policy_boundary_real_llm.cpp)
+target_link_libraries(test_phase7b_policy_boundary_real_llm PRIVATE vani_core)
+add_test(NAME test_phase7b_policy_boundary_real_llm COMMAND test_phase7b_policy_boundary_real_llm)
+
+add_executable(test_phase7b_secret_scrubbing_runtime integration/test_phase7b_secret_scrubbing_runtime.cpp)
+target_link_libraries(test_phase7b_secret_scrubbing_runtime PRIVATE vani_core)
+add_test(NAME test_phase7b_secret_scrubbing_runtime COMMAND test_phase7b_secret_scrubbing_runtime)
+
+add_executable(test_phase7b_resource_runtime integration/test_phase7b_resource_runtime.cpp)
+target_link_libraries(test_phase7b_resource_runtime PRIVATE vani_core)
+add_test(NAME test_phase7b_resource_runtime COMMAND test_phase7b_resource_runtime)
+
+add_executable(test_phase7b_voice_to_agent integration/test_phase7b_voice_to_agent.cpp)
+target_link_libraries(test_phase7b_voice_to_agent PRIVATE vani_core)
+add_test(NAME test_phase7b_voice_to_agent COMMAND test_phase7b_voice_to_agent)
+
+# Phase 7C Real Agent Loop Completion & Real Voice->Agent Integration Tests
+add_executable(test_phase7c_real_model_plan integration/test_phase7c_real_model_plan.cpp)
+target_link_libraries(test_phase7c_real_model_plan PRIVATE vani_core)
+add_test(NAME test_phase7c_real_model_plan COMMAND test_phase7c_real_model_plan)
+
+add_executable(test_phase7c_agentcontroller_real_replan integration/test_phase7c_agentcontroller_real_replan.cpp)
+target_link_libraries(test_phase7c_agentcontroller_real_replan PRIVATE vani_core)
+add_test(NAME test_phase7c_agentcontroller_real_replan COMMAND test_phase7c_agentcontroller_real_replan)
+
+add_executable(test_phase7c_real_toolgateway integration/test_phase7c_real_toolgateway.cpp)
+target_link_libraries(test_phase7c_real_toolgateway PRIVATE vani_core)
+add_test(NAME test_phase7c_real_toolgateway COMMAND test_phase7c_real_toolgateway)
+
+add_executable(test_phase7c_independent_verification integration/test_phase7c_independent_verification.cpp)
+target_link_libraries(test_phase7c_independent_verification PRIVATE vani_core)
+add_test(NAME test_phase7c_independent_verification COMMAND test_phase7c_independent_verification)
+
+add_executable(test_phase7c_policy_boundary_real_llm integration/test_phase7c_policy_boundary_real_llm.cpp)
+target_link_libraries(test_phase7c_policy_boundary_real_llm PRIVATE vani_core)
+add_test(NAME test_phase7c_policy_boundary_real_llm COMMAND test_phase7c_policy_boundary_real_llm)
+
+add_executable(test_phase7c_cancellation integration/test_phase7c_cancellation.cpp)
+target_link_libraries(test_phase7c_cancellation PRIVATE vani_core)
+add_test(NAME test_phase7c_cancellation COMMAND test_phase7c_cancellation)
+
+add_executable(test_phase7c_resource_offline integration/test_phase7c_resource_offline.cpp)
+target_link_libraries(test_phase7c_resource_offline PRIVATE vani_core)
+add_test(NAME test_phase7c_resource_offline COMMAND test_phase7c_resource_offline)
+
+add_executable(test_phase7c_live_voice_agent integration/test_phase7c_live_voice_agent.cpp)
+target_link_libraries(test_phase7c_live_voice_agent PRIVATE vani_core)
+add_test(NAME test_phase7c_live_voice_agent COMMAND test_phase7c_live_voice_agent)
+
+# Phase 7C.1 Real Live Human Voice -> Agent Acceptance Test
+add_executable(test_phase7c_1_live_voice_agent integration/test_phase7c_1_live_voice_agent.cpp)
+target_link_libraries(test_phase7c_1_live_voice_agent PRIVATE vani_core)
+add_test(NAME test_phase7c_1_live_voice_agent COMMAND test_phase7c_1_live_voice_agent)
+
+# Phase 7C.1 Wake Diagnostic Tool
+add_executable(test_phase7c_1_wake_diagnostic integration/test_phase7c_1_wake_diagnostic.cpp)
+target_link_libraries(test_phase7c_1_wake_diagnostic PRIVATE vani_core)
+
+# Phase 7C.1 Mic Signal Diagnostic Tool
+add_executable(test_phase7c_1_mic_signal_diagnostic integration/test_phase7c_1_mic_signal_diagnostic.cpp)
+target_link_libraries(test_phase7c_1_mic_signal_diagnostic PRIVATE vani_core ole32)
+
+# Phase 7C.1 Windows Mic Forensics Tool
+add_executable(test_phase7c_1_windows_mic_forensics integration/test_phase7c_1_windows_mic_forensics.cpp)
+target_link_libraries(test_phase7c_1_windows_mic_forensics PRIVATE ole32 uuid ksuser)
+
+# Phase 7C.1 Raw WASAPI Capture Diagnostic
+add_executable(test_phase7c_1_raw_wasapi_capture integration/test_phase7c_1_raw_wasapi_capture.cpp)
+target_link_libraries(test_phase7c_1_raw_wasapi_capture PRIVATE ole32 uuid ksuser)
+
+# Phase 7C.1 Compare Endpoints Tool
+add_executable(test_phase7c_1_compare_endpoints integration/test_phase7c_1_compare_endpoints.cpp)
+target_link_libraries(test_phase7c_1_compare_endpoints PRIVATE ole32 uuid ksuser)
+
+# Phase 7C.1 Toggle Enhancements Tool
+add_executable(test_phase7c_1_toggle_enhancements integration/test_phase7c_1_toggle_enhancements.cpp)
+target_link_libraries(test_phase7c_1_toggle_enhancements PRIVATE ole32 uuid ksuser)
+
+# Step 3: Mark 1 vs Mark 2 Capture Comparison Tool
+add_executable(test_mark1_mark2_capture_comparison integration/test_mark1_mark2_capture_comparison.cpp)
+target_link_libraries(test_mark1_mark2_capture_comparison PRIVATE vani_core ole32 uuid ksuser)
+
+# Phase 7C.1 Adaptive VAD Diagnostic
+add_executable(test_phase7c_1_adaptive_vad_diagnostic integration/test_phase7c_1_adaptive_vad_diagnostic.cpp)
+target_link_libraries(test_phase7c_1_adaptive_vad_diagnostic PRIVATE vani_core ole32 uuid ksuser)
+
+# Unit Test: Adaptive VAD Dynamics
+add_executable(test_adaptive_vad unit/test_adaptive_vad.cpp)
+target_link_libraries(test_adaptive_vad PRIVATE vani_core)
+add_test(NAME test_adaptive_vad COMMAND test_adaptive_vad)
+
+# Phase 7C.1 Focused Channel Isolation Diagnostic (Ch0 vs Ch1)
+add_executable(test_phase7c_1_channel_isolation integration/test_phase7c_1_channel_isolation.cpp)
+target_link_libraries(test_phase7c_1_channel_isolation PRIVATE vani_core ole32 uuid ksuser)
+
+# Phase 7C.1 Windows Mic Root-Cause Diagnostic
+add_executable(test_phase7c_1_windows_mic_root_cause integration/test_phase7c_1_windows_mic_root_cause.cpp)
+target_link_libraries(test_phase7c_1_windows_mic_root_cause PRIVATE ole32 uuid ksuser)
+
+# Phase 7C.1 Definitive Microphone Capture Recording Tool
+add_executable(test_phase7c_1_capture_recording integration/test_phase7c_1_capture_recording.cpp)
+target_link_libraries(test_phase7c_1_capture_recording PRIVATE ole32 uuid ksuser)
+

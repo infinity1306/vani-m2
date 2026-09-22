@@ -1,0 +1,48 @@
+# Prerequisites & Build Directories
+build/
+bin/
+obj/
+out/
+dist/
+node_modules/
+ort_temp/
+scratch/
+.cache/
+
+# Compiled Binaries, Libraries & Archives
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.zip
+*.tar.gz
+*.tar.bz2
+
+# Logs & Temporary Files
+*.log
+replan_run.log
+temp_*.txt
+*.tsbuildinfo
+*.tmp
+
+# Pretrained AI models & checkpoints (large files >100MB)
+models/*
+!models/wakeword/
+!models/wakeword/vani_dedicated_metadata.json
+
+# IDE & Editor files
+.vscode/*
+!.vscode/settings.json
+!.vscode/cmake-kits.json
+.idea/
+*.swp
+*.swo
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,55 @@
+export const tokens = {
+  colors: {
+    bg: {
+      darkest: '#05070b',
+      surface: '#090d16',
+      elevated: '#0f172a',
+      card: '#111827',
+      panel: '#151e30',
+    },
+    border: {
+      subtle: 'rgba(255, 255, 255, 0.07)',
+      default: 'rgba(255, 255, 255, 0.12)',
+      hover: 'rgba(139, 92, 246, 0.35)',
+      active: 'rgba(139, 92, 246, 0.6)',
+    },
+    accent: {
+      violet: '#8b5cf6',
+      violetHover: '#7c3aed',
+      violetGlow: 'rgba(139, 92, 246, 0.35)',
+      cyan: '#06b6d4',
+      cyanGlow: 'rgba(6, 182, 212, 0.35)',
+      emerald: '#10b981',
+      emeraldGlow: 'rgba(16, 185, 129, 0.3)',
+      amber: '#f59e0b',
+      rose: '#f43f5e',
+    },
+    text: {
+      primary: '#f8fafc',
+      secondary: '#94a3b8',
+      muted: '#64748b',
+      accent: '#c084fc',
+    },
+  },
+  radii: {
+    sm: '6px',
+    md: '10px',
+    lg: '16px',
+    xl: '22px',
+    full: '9999px',
+  },
+  typography: {
+    fontSans: 'Plus Jakarta Sans, sans-serif',
+    fontMono: 'JetBrains Mono, monospace',
+  },
+  zIndex: {
+    base: 0,
+    card: 10,
+    sticky: 30,
+    dropdown: 50,
+    modal: 80,
+    commandPalette: 90,
+    voiceFloating: 100,
+    toast: 110,
+  },
+};
