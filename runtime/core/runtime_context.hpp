@@ -21,6 +21,11 @@
 #include "../../storage/scheduler_repository.hpp"
 #include <memory>
 
+namespace vani::capabilities::system {
+class ToolGateway;
+using ToolGatewayPtr = std::shared_ptr<ToolGateway>;
+}
+
 namespace vani::runtime {
 
 struct RuntimeContext {
@@ -38,6 +43,7 @@ struct RuntimeContext {
     WatchdogPtr watchdog;
     AuditServicePtr audit_service;
     ResourceManagerPtr resource_manager;
+    capabilities::system::ToolGatewayPtr tool_gateway;
 
     storage::TaskRepositoryPtr task_repository;
     storage::SessionRepositoryPtr session_repository;

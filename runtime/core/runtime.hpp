@@ -33,6 +33,7 @@ public:
     [[nodiscard]] AuditServicePtr audit_service() const noexcept;
     [[nodiscard]] ResourceManagerPtr resource_manager() const noexcept;
     [[nodiscard]] observability::HealthServicePtr health_service() const noexcept;
+    [[nodiscard]] capabilities::system::ToolGatewayPtr tool_gateway() const noexcept;
 
 private:
     void build_default_context(const config::RuntimeProfile& profile);

@@ -182,7 +182,16 @@ contracts::AgentExecutionResult AgentController::execute_goal(const contracts::A
         // 6. User-facing response formulation
         if (result.final_state == contracts::PlanState::Completed) {
             result.verified = true;
-            result.final_response = "All tasks completed successfully and verified on system.";
+            if (!plan.expected_outcomes.empty()) {
+                std::string summary;
+                for (size_t i = 0; i < plan.expected_outcomes.size(); ++i) {
+                    if (i > 0) summary += ", ";
+                    summary += plan.expected_outcomes[i];
+                }
+                result.final_response = "All tasks completed successfully: " + summary + " [verified on system]";
+            } else {
+                result.final_response = "All tasks completed successfully and verified on system.";
+            }
         } else if (result.final_state == contracts::PlanState::BlockedPolicy) {
             result.final_response = "Action stopped because policy security rules disallow it.";
         } else if (result.final_state == contracts::PlanState::BlockedDependency) {

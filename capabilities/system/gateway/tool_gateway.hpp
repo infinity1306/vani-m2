@@ -30,6 +30,9 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include "../undo/undo_manager.hpp"
+#include "../../../contracts/memory/memory_provider.hpp"
+#include "../../../runtime/scheduler/scheduler.hpp"
 
 namespace vani::capabilities::system {
 
@@ -101,6 +104,13 @@ public:
     [[nodiscard]] PowerManagerPtr power_manager() const noexcept { return power_manager_; }
     [[nodiscard]] NotificationManagerPtr notification_manager() const noexcept { return notif_manager_; }
     [[nodiscard]] SystemActionJournalPtr action_journal() const noexcept { return journal_; }
+    [[nodiscard]] UndoManagerPtr undo_manager() const noexcept { return undo_manager_; }
+    [[nodiscard]] contracts::MemoryProviderPtr memory_provider() const noexcept { return memory_provider_; }
+    [[nodiscard]] runtime::SchedulerPtr scheduler() const noexcept { return scheduler_; }
+
+    void set_undo_manager(UndoManagerPtr undo_mgr) noexcept { undo_manager_ = undo_mgr; }
+    void set_memory_provider(contracts::MemoryProviderPtr mem_prov) noexcept { memory_provider_ = mem_prov; }
+    void set_scheduler(runtime::SchedulerPtr sched) noexcept { scheduler_ = sched; }
 
 private:
     contracts::Result<std::string> dispatch_capability(
@@ -136,6 +146,9 @@ private:
     PowerManagerPtr power_manager_;
     NotificationManagerPtr notif_manager_;
     SystemActionJournalPtr journal_;
+    UndoManagerPtr undo_manager_{nullptr};
+    contracts::MemoryProviderPtr memory_provider_{nullptr};
+    runtime::SchedulerPtr scheduler_{nullptr};
 };
 
 using ToolGatewayPtr = std::shared_ptr<ToolGateway>;

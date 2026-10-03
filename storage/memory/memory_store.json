@@ -1,0 +1,14 @@
+[
+  {
+    "id": "mem_1790539585471_1",
+    "tier": 1,
+    "key": "favorite_language",
+    "content": "C++20 and modern architecture",
+    "source": "user",
+    "confidence": 1,
+    "created_at_ms": 1790539585471,
+    "last_accessed_ms": 1790539585471,
+    "is_pinned": false,
+    "transparency_reason": ""
+  }
+]

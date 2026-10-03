@@ -22,6 +22,45 @@ contracts::Result<contracts::AgentPlan> DeterministicRulePlanner::generate_plan(
 
     const std::string& goal = request.goal;
 
+    std::string lower_goal = goal;
+    for (char& c : lower_goal) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+
+    // Pattern 0: Specific Notepad Launch or Close
+    if (lower_goal.find("notepad") != std::string::npos) {
+        if (lower_goal.find("close") != std::string::npos ||
+            lower_goal.find("kill") != std::string::npos ||
+            lower_goal.find("stop") != std::string::npos ||
+            lower_goal.find("band") != std::string::npos) {
+            contracts::AgentStep s1;
+            s1.step_id = "step_1";
+            s1.capability_id = "application.close";
+            s1.tool_id = "app_manager.close";
+            s1.arguments["app_name"] = "notepad";
+            s1.expected_postcondition = "process.stopped:notepad.exe";
+            s1.risk_level = contracts::RiskLevel::Medium;
+            s1.retry_policy_max_attempts = 2;
+            s1.timeout_ms = 10000;
+
+            plan.steps = {s1};
+            plan.expected_outcomes = {"Notepad application closed"};
+            return contracts::Result<contracts::AgentPlan>::success(plan);
+        } else {
+            contracts::AgentStep s1;
+            s1.step_id = "step_1";
+            s1.capability_id = "application.launch";
+            s1.tool_id = "app_manager.launch";
+            s1.arguments["app_name"] = "notepad";
+            s1.expected_postcondition = "process.running:notepad.exe";
+            s1.risk_level = contracts::RiskLevel::Low;
+            s1.retry_policy_max_attempts = 2;
+            s1.timeout_ms = 15000;
+
+            plan.steps = {s1};
+            plan.expected_outcomes = {"Notepad application launched"};
+            return contracts::Result<contracts::AgentPlan>::success(plan);
+        }
+    }
+
     // Pattern 1: Launch application + open URL
     // e.g. "Chrome kholo aur Google open karo", "Open Chrome and visit github"
     if ((goal.find("Chrome") != std::string::npos || goal.find("chrome") != std::string::npos) &&
@@ -57,8 +96,7 @@ contracts::Result<contracts::AgentPlan> DeterministicRulePlanner::generate_plan(
     }
 
     // Pattern 2: Multi-step project open and inspection
-    // e.g. "VS Code mein mera VANI project open karo aur latest build error dekh ke batao"
-    if (goal.find("VS Code") != std::string::npos || goal.find("code") != std::string::npos || goal.find("project") != std::string::npos) {
+    if (goal.find("VS Code") != std::string::npos || (goal.find("code") != std::string::npos && goal.find("vani") != std::string::npos)) {
         contracts::AgentStep s1;
         s1.step_id = "step_1";
         s1.capability_id = "application.launch";
@@ -83,6 +121,116 @@ contracts::Result<contracts::AgentPlan> DeterministicRulePlanner::generate_plan(
         plan.steps = {s1, s2};
         plan.dependencies = {{"step_1", "step_2"}};
         plan.expected_outcomes = {"Visual Studio Code opened", "VANI project build state inspected"};
+        return contracts::Result<contracts::AgentPlan>::success(plan);
+    }
+
+    // Pattern 3: Generic Open / Launch Application
+    if (lower_goal.starts_with("open ") || lower_goal.starts_with("launch ") || lower_goal.starts_with("start ")) {
+        size_t p = lower_goal.find(' ');
+        std::string app_target = lower_goal.substr(p + 1);
+        size_t sp = app_target.find_first_of(" \t\r\n");
+        if (sp != std::string::npos) app_target = app_target.substr(0, sp);
+
+        if (!app_target.empty()) {
+            contracts::AgentStep s1;
+            s1.step_id = "step_1";
+            s1.capability_id = "application.launch";
+            s1.tool_id = "app_manager.launch";
+            s1.arguments["app_name"] = app_target;
+            s1.expected_postcondition = "process.running:" + app_target;
+            s1.risk_level = contracts::RiskLevel::Low;
+            s1.retry_policy_max_attempts = 2;
+            s1.timeout_ms = 15000;
+
+            plan.steps = {s1};
+            plan.expected_outcomes = {app_target + " application launched"};
+            return contracts::Result<contracts::AgentPlan>::success(plan);
+        }
+    }
+
+    // Pattern 4: Close / Stop Application
+    if (lower_goal.starts_with("close ") || lower_goal.starts_with("kill ") || lower_goal.starts_with("stop ")) {
+        size_t p = lower_goal.find(' ');
+        std::string app_target = lower_goal.substr(p + 1);
+        size_t sp = app_target.find_first_of(" \t\r\n");
+        if (sp != std::string::npos) app_target = app_target.substr(0, sp);
+
+        if (!app_target.empty()) {
+            contracts::AgentStep s1;
+            s1.step_id = "step_1";
+            s1.capability_id = "application.close";
+            s1.tool_id = "app_manager.close";
+            s1.arguments["app_name"] = app_target;
+            s1.expected_postcondition = "process.stopped:" + app_target;
+            s1.risk_level = contracts::RiskLevel::Medium;
+            s1.retry_policy_max_attempts = 2;
+            s1.timeout_ms = 10000;
+
+            plan.steps = {s1};
+            plan.expected_outcomes = {app_target + " application closed"};
+            return contracts::Result<contracts::AgentPlan>::success(plan);
+        }
+    }
+
+    // Pattern 5: YouTube / Media Play
+    if (lower_goal.starts_with("play ") || lower_goal.find("youtube") != std::string::npos) {
+        std::string target = goal;
+        if (lower_goal.starts_with("play ")) target = goal.substr(5);
+        contracts::AgentStep s1;
+        s1.step_id = "step_1";
+        s1.capability_id = "media.youtube.play";
+        s1.tool_id = "media.youtube.play";
+        s1.arguments["target"] = target;
+        s1.expected_postcondition = "";
+        s1.risk_level = contracts::RiskLevel::Low;
+        s1.retry_policy_max_attempts = 1;
+        s1.timeout_ms = 15000;
+
+        plan.steps = {s1};
+        plan.expected_outcomes = {"Playing media: " + target};
+        return contracts::Result<contracts::AgentPlan>::success(plan);
+    }
+
+    // Pattern 6: Web Search
+    if (lower_goal.starts_with("search ") || lower_goal.starts_with("find ")) {
+        size_t p = lower_goal.find(' ');
+        std::string q = goal.substr(p + 1);
+        contracts::AgentStep s1;
+        s1.step_id = "step_1";
+        s1.capability_id = "web.search";
+        s1.tool_id = "web.search";
+        s1.arguments["query"] = q;
+        s1.expected_postcondition = "";
+        s1.risk_level = contracts::RiskLevel::Low;
+        s1.retry_policy_max_attempts = 1;
+        s1.timeout_ms = 15000;
+
+        plan.steps = {s1};
+        plan.expected_outcomes = {"Search results for " + q};
+        return contracts::Result<contracts::AgentPlan>::success(plan);
+    }
+
+    // Pattern 7: Weather
+    if (lower_goal.find("weather") != std::string::npos) {
+        std::string loc = "auto";
+        size_t in_pos = lower_goal.find(" in ");
+        if (in_pos != std::string::npos) {
+            loc = goal.substr(in_pos + 4);
+            size_t sp = loc.find_first_of(" ?.,\r\n");
+            if (sp != std::string::npos) loc = loc.substr(0, sp);
+        }
+        contracts::AgentStep s1;
+        s1.step_id = "step_1";
+        s1.capability_id = "weather.get";
+        s1.tool_id = "weather.get";
+        s1.arguments["location"] = loc;
+        s1.expected_postcondition = "";
+        s1.risk_level = contracts::RiskLevel::Low;
+        s1.retry_policy_max_attempts = 1;
+        s1.timeout_ms = 10000;
+
+        plan.steps = {s1};
+        plan.expected_outcomes = {"Weather forecast fetched for " + loc};
         return contracts::Result<contracts::AgentPlan>::success(plan);
     }
 

@@ -105,7 +105,11 @@ add_library(vani_core STATIC
     capabilities/system/power/power_manager.cpp
     capabilities/system/notifications/notification_manager.cpp
     capabilities/system/journal/system_action_journal.cpp
+    capabilities/system/undo/undo_manager.cpp
     capabilities/system/gateway/tool_gateway.cpp
+    adapters/network/http_client.cpp
+    adapters/memory/persistent_memory_provider.cpp
+    runtime/plugins/plugin_manager.cpp
     adapters/system/windows/windows_system_adapter.cpp
     adapters/system/linux/linux_system_adapter.cpp
     adapters/system/macos/macos_system_adapter.cpp
@@ -133,7 +137,7 @@ target_include_directories(vani_core PUBLIC
 
 target_link_libraries(vani_core PUBLIC sherpa-onnx-c-api)
 if(WIN32)
-    target_link_libraries(vani_core PUBLIC psapi ole32 shell32 winhttp)
+    target_link_libraries(vani_core PUBLIC psapi ole32 shell32 winhttp gdi32 user32)
 endif()
 
 # Main VANI Daemon application

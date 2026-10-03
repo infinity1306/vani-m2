@@ -9,7 +9,13 @@ Scheduler::Scheduler(
     uint32_t tick_interval_ms
 ) : tick_interval_ms_(tick_interval_ms),
     task_manager_(std::move(task_manager)),
-    repository_(std::move(repository)) {}
+    repository_(std::move(repository)) {
+    if (repository_) {
+        for (const auto& job : repository_->find_all()) {
+            jobs_[job.job_id] = job;
+        }
+    }
+}
 
 Scheduler::~Scheduler() {
     stop();

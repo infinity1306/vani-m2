@@ -170,14 +170,55 @@ function broadcastEvent(eventType, data) {
   }
 }
 
-// Periodic Telemetry Simulation
+const os = require('os');
+
+// Real Hardware Telemetry Sampling
+let prevCpuTimes = null;
+
+function getRealCpuUsage() {
+  const cpus = os.cpus();
+  if (!cpus || cpus.length === 0) return 10;
+  let totalUser = 0, totalNice = 0, totalSys = 0, totalIdle = 0, totalIrq = 0;
+  for (const cpu of cpus) {
+    totalUser += cpu.times.user;
+    totalNice += cpu.times.nice;
+    totalSys += cpu.times.sys;
+    totalIdle += cpu.times.idle;
+    totalIrq += cpu.times.irq;
+  }
+  const total = totalUser + totalNice + totalSys + totalIdle + totalIrq;
+  if (!prevCpuTimes) {
+    prevCpuTimes = { total, idle: totalIdle };
+    return 15;
+  }
+  const diffTotal = total - prevCpuTimes.total;
+  const diffIdle = totalIdle - prevCpuTimes.idle;
+  prevCpuTimes = { total, idle: totalIdle };
+  if (diffTotal <= 0) return 10;
+  const usage = Math.round(((diffTotal - diffIdle) / diffTotal) * 100);
+  return Math.max(1, Math.min(100, usage));
+}
+
+function getRealMemoryUsage() {
+  const total = os.totalmem();
+  const free = os.freemem();
+  if (total <= 0) return 50;
+  return Math.round(((total - free) / total) * 100);
+}
+
+// Periodic Real Hardware Telemetry Sampling
 setInterval(() => {
-  runtimeState.systemMetrics.cpu = Math.floor(15 + Math.random() * 15);
-  runtimeState.systemMetrics.memory = Math.floor(40 + Math.random() * 5);
-  runtimeState.systemMetrics.gpu = Math.floor(20 + Math.random() * 20);
+  const realCpu = getRealCpuUsage();
+  const realMem = getRealMemoryUsage();
+  runtimeState.systemMetrics.cpu = realCpu;
+  runtimeState.systemMetrics.memory = realMem;
+  runtimeState.systemMetrics.uptime = Math.floor(os.uptime());
+  runtimeState.systemMetrics.platform = os.platform();
+  runtimeState.systemMetrics.arch = os.arch();
+  runtimeState.systemMetrics.loadAvg = Math.round(os.loadavg()[0] * 100) / 100;
 
   broadcastEvent('system:metrics:updated', runtimeState.systemMetrics);
-}, 3000);
+}, 2000);
 
 const server = http.createServer((req, res) => {
   // CORS Headers
@@ -191,7 +232,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url, 'http://' + (req.headers.host || 'localhost:' + PORT));
   const pathname = parsedUrl.pathname;
 
   // 1. Server-Sent Events (SSE) Stream
@@ -207,6 +248,39 @@ const server = http.createServer((req, res) => {
 
     req.on('close', () => {
       sseClients.delete(res);
+    });
+    return;
+  }
+
+  // 1b. Remote Tool Dispatch Endpoint (Phase 19 Remote Dashboard)
+  if (pathname === '/api/tool/execute' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const tool = payload.tool || payload.capability_id || 'system.status';
+        const args = payload.args || payload.arguments_json || '{}';
+        const { execFile } = require('child_process');
+        const path = require('path');
+        const cliPath = path.join(__dirname, '..', 'build', 'vani-cli.exe');
+
+        const cliArgs = ['exec', tool, typeof args === 'string' ? args : JSON.stringify(args)];
+        if (payload.confirm) cliArgs.push('--confirm');
+
+        execFile(cliPath, cliArgs, (err, stdout, stderr) => {
+          if (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: err.message, stderr }));
+          } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, output: stdout }));
+          }
+        });
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid payload: ' + err.message }));
+      }
     });
     return;
   }

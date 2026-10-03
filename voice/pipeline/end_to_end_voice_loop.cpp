@@ -266,6 +266,12 @@ void EndToEndVoiceLoop::handle_intent_ready(const GatedTurnResult& turn) {
         current_turn_evidence_.timestamps.mark_t18();
     }
 
+    if (playback_ok) {
+        // Acoustic room reverberation decay hangover: suppress mic capture
+        // for 250ms following speaker playback to guarantee zero self-triggering
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+
     is_speaking_.store(false);
     state_.store(VoiceLoopState::Idle);
 

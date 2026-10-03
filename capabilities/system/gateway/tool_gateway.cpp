@@ -1,4 +1,5 @@
 #include "tool_gateway.hpp"
+#include "../../../adapters/network/http_client.hpp"
 #include <chrono>
 #include <sstream>
 
@@ -188,6 +189,63 @@ contracts::Result<contracts::ToolResult> ToolGateway::execute(const ToolExecutio
     return contracts::Result<contracts::ToolResult>::success(tool_res);
 }
 
+static std::string extract_json_field(const std::string& input, const std::string& field_name) {
+    if (input.empty()) return "";
+
+    std::string trimmed = input;
+    size_t first = trimmed.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return "";
+    size_t last = trimmed.find_last_not_of(" \t\r\n");
+    trimmed = trimmed.substr(first, (last - first + 1));
+
+    if (trimmed.front() != '{') {
+        return trimmed;
+    }
+
+    std::vector<std::string> patterns = {
+        "\"" + field_name + "\":",
+        "\"" + field_name + "\" :",
+        field_name + ":",
+        field_name + " :"
+    };
+
+    size_t val_start = std::string::npos;
+    for (const auto& pat : patterns) {
+        size_t pos = trimmed.find(pat);
+        if (pos != std::string::npos) {
+            val_start = pos + pat.length();
+            break;
+        }
+    }
+
+    if (val_start == std::string::npos) return "";
+
+    val_start = trimmed.find_first_not_of(" \t\r\n", val_start);
+    if (val_start == std::string::npos) return "";
+
+    if (trimmed[val_start] == '\"') {
+        size_t end = val_start + 1;
+        while (end < trimmed.size()) {
+            if (trimmed[end] == '\\') {
+                end += 2;
+                continue;
+            }
+            if (trimmed[end] == '\"') {
+                return trimmed.substr(val_start + 1, end - val_start - 1);
+            }
+            end++;
+        }
+        return trimmed.substr(val_start + 1);
+    } else {
+        size_t end = trimmed.find_first_of(",}\r\n", val_start);
+        if (end == std::string::npos) end = trimmed.size();
+        std::string res = trimmed.substr(val_start, end - val_start);
+        size_t rlast = res.find_last_not_of(" \t\r\n");
+        if (rlast != std::string::npos) res = res.substr(0, rlast + 1);
+        return res;
+    }
+}
+
 contracts::Result<std::string> ToolGateway::dispatch_capability(
     const std::string& capability_id,
     const std::string& arguments_json,
@@ -196,34 +254,17 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     // 1. Applications
     if (capability_id == "system.application.open" || capability_id == "application.launch") {
         if (!app_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "App manager unavailable");
-        std::string app_name = arguments_json.empty() ? "chrome" : arguments_json;
-        if (app_name.find("\"app_name\":") != std::string::npos) {
-            auto pos = app_name.find("\"app_name\":");
-            auto q1 = app_name.find('\"', pos + 11);
-            if (q1 != std::string::npos) {
-                auto q2 = app_name.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    app_name = app_name.substr(q1 + 1, q2 - q1 - 1);
-                }
-            }
-        }
+        std::string app_name = extract_json_field(arguments_json, "app_name");
+        if (app_name.empty()) app_name = extract_json_field(arguments_json, "name");
+        if (app_name.empty()) app_name = "chrome";
         auto res = app_manager_->open_application(app_name);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"opened\", \"app_id\": \"" + res.value().application_id + "\"}");
     }
     if (capability_id == "system.application.close" || capability_id == "application.close") {
         if (!app_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "App manager unavailable");
-        std::string app_name = arguments_json;
-        if (app_name.find("\"app_name\":") != std::string::npos) {
-            auto pos = app_name.find("\"app_name\":");
-            auto q1 = app_name.find('\"', pos + 11);
-            if (q1 != std::string::npos) {
-                auto q2 = app_name.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    app_name = app_name.substr(q1 + 1, q2 - q1 - 1);
-                }
-            }
-        }
+        std::string app_name = extract_json_field(arguments_json, "app_name");
+        if (app_name.empty()) app_name = extract_json_field(arguments_json, "name");
         auto res = app_manager_->close_application(app_name);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"closed\"}");
@@ -244,8 +285,9 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     }
     if (capability_id == "system.process.stop") {
         if (!proc_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Process manager unavailable");
-        uint32_t pid = 100;
-        try { pid = static_cast<uint32_t>(std::stoul(arguments_json)); } catch (...) {}
+        std::string pid_str = extract_json_field(arguments_json, "pid");
+        uint32_t pid = 0;
+        try { pid = static_cast<uint32_t>(std::stoul(pid_str)); } catch (...) {}
         auto res = proc_manager_->stop_process(pid);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"stopped\", \"pid\": " + std::to_string(pid) + "}");
@@ -254,62 +296,55 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     // 3. Filesystem
     if (capability_id == "filesystem.read") {
         if (!fs_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Filesystem manager unavailable");
-        std::string path = arguments_json;
-        if (arguments_json.find("\"path\":") != std::string::npos) {
-            auto pos = arguments_json.find("\"path\":");
-            auto q1 = arguments_json.find('\"', pos + 7);
-            if (q1 != std::string::npos) {
-                auto q2 = arguments_json.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    path = arguments_json.substr(q1 + 1, q2 - q1 - 1);
-                }
-            }
-        }
+        std::string path = extract_json_field(arguments_json, "path");
         auto res = fs_manager_->read_file(path);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success(res.value());
     }
     if (capability_id == "filesystem.write") {
         if (!fs_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Filesystem manager unavailable");
-        std::string path = arguments_json;
-        std::string content = "file content";
-        if (arguments_json.find("\"path\":") != std::string::npos) {
-            auto pos = arguments_json.find("\"path\":");
-            auto q1 = arguments_json.find('\"', pos + 7);
-            if (q1 != std::string::npos) {
-                auto q2 = arguments_json.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    path = arguments_json.substr(q1 + 1, q2 - q1 - 1);
-                }
+        std::string path = extract_json_field(arguments_json, "path");
+        std::string content = extract_json_field(arguments_json, "content");
+        if (content.empty()) content = "file content";
+
+        // Record undo snapshot before modification
+        if (undo_manager_) {
+            UndoAction undo_act;
+            undo_act.type = UndoActionType::FileWrite;
+            undo_act.target_path = path;
+            auto existing = fs_manager_->read_file(path);
+            if (existing.is_success()) {
+                undo_act.target_existed = true;
+                undo_act.previous_data = existing.value();
+            } else {
+                undo_act.target_existed = false;
             }
+            undo_act.description = "Write file: " + path;
+            undo_manager_->record_action(undo_act);
         }
-        if (arguments_json.find("\"content\":") != std::string::npos) {
-            auto pos = arguments_json.find("\"content\":");
-            auto q1 = arguments_json.find('\"', pos + 10);
-            if (q1 != std::string::npos) {
-                auto q2 = arguments_json.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    content = arguments_json.substr(q1 + 1, q2 - q1 - 1);
-                }
-            }
-        }
+
         auto res = fs_manager_->write_file(path, content);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"written\", \"path\": \"" + path + "\"}");
     }
     if (capability_id == "filesystem.delete") {
         if (!fs_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Filesystem manager unavailable");
-        std::string path = arguments_json;
-        if (arguments_json.find("\"path\":") != std::string::npos) {
-            auto pos = arguments_json.find("\"path\":");
-            auto q1 = arguments_json.find('\"', pos + 7);
-            if (q1 != std::string::npos) {
-                auto q2 = arguments_json.find('\"', q1 + 1);
-                if (q2 != std::string::npos) {
-                    path = arguments_json.substr(q1 + 1, q2 - q1 - 1);
-                }
+        std::string path = extract_json_field(arguments_json, "path");
+
+        // Record undo snapshot before deletion
+        if (undo_manager_) {
+            UndoAction undo_act;
+            undo_act.type = UndoActionType::FileDelete;
+            undo_act.target_path = path;
+            auto existing = fs_manager_->read_file(path);
+            if (existing.is_success()) {
+                undo_act.target_existed = true;
+                undo_act.previous_data = existing.value();
             }
+            undo_act.description = "Delete file: " + path;
+            undo_manager_->record_action(undo_act);
         }
+
         auto res = fs_manager_->delete_file(path, true); // Safe trash default
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"deleted_to_trash\"}");
@@ -319,7 +354,7 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     if (capability_id == "terminal.execute") {
         if (!term_executor_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Terminal executor unavailable");
         contracts::TerminalExecutionRequest req;
-        req.command = arguments_json;
+        req.command = extract_json_field(arguments_json, "command");
         auto res = term_executor_->execute(req, context.cancellation_token);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success(res.value().stdout_content);
@@ -330,8 +365,9 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
         if (!browser_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Browser manager unavailable");
         auto s_res = browser_manager_->open_browser(context.task_id);
         if (!s_res.is_success()) return contracts::Result<std::string>::failure(s_res.error());
-        if (!arguments_json.empty()) {
-            browser_manager_->navigate(s_res.value().session_id, arguments_json);
+        std::string url = extract_json_field(arguments_json, "url");
+        if (!url.empty()) {
+            browser_manager_->navigate(s_res.value().session_id, url);
         }
         return contracts::Result<std::string>::success("{\"status\": \"navigated\", \"session_id\": \"" + s_res.value().session_id + "\"}");
     }
@@ -353,7 +389,9 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     }
     if (capability_id == "clipboard.write") {
         if (!clipboard_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Clipboard manager unavailable");
-        auto res = clipboard_manager_->write_clipboard(arguments_json);
+        std::string text = extract_json_field(arguments_json, "text");
+        if (text.empty()) text = extract_json_field(arguments_json, "content");
+        auto res = clipboard_manager_->write_clipboard(text);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"clipboard_updated\"}");
     }
@@ -389,8 +427,10 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     }
     if (capability_id == "media.volume") {
         if (!media_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Media manager unavailable");
+        std::string vol_str = extract_json_field(arguments_json, "level");
+        if (vol_str.empty()) vol_str = extract_json_field(arguments_json, "volume");
         uint32_t vol = 50;
-        try { vol = static_cast<uint32_t>(std::stoul(arguments_json)); } catch (...) {}
+        try { vol = static_cast<uint32_t>(std::stoul(vol_str)); } catch (...) {}
         auto res = media_manager_->set_volume(vol);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"volume\": " + std::to_string(vol) + "}");
@@ -421,13 +461,169 @@ contracts::Result<std::string> ToolGateway::dispatch_capability(
     // 13. Notifications
     if (capability_id == "system.notification.send") {
         if (!notif_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Notification manager unavailable");
+        std::string message = extract_json_field(arguments_json, "message");
+        std::string title = extract_json_field(arguments_json, "title");
+        if (title.empty()) title = "VANI Alert";
         contracts::NotificationPayload notif;
         notif.id = "notif_001";
-        notif.title = "VANI Alert";
-        notif.message = arguments_json;
+        notif.title = title;
+        notif.message = message;
         auto res = notif_manager_->send_notification(notif);
         if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
         return contracts::Result<std::string>::success("{\"status\": \"sent\"}");
+    }
+
+    // 14. Undo System
+    if (capability_id == "undo.execute" || capability_id == "undo.rollback") {
+        if (!undo_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Undo manager unavailable");
+        auto res = undo_manager_->undo_last();
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        return contracts::Result<std::string>::success("{\"status\": \"undone\", \"target\": \"" + res.value().target_path + "\", \"description\": \"" + res.value().description + "\"}");
+    }
+    if (capability_id == "undo.list") {
+        if (!undo_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Undo manager unavailable");
+        auto list = undo_manager_->list_history();
+        return contracts::Result<std::string>::success("{\"count\": " + std::to_string(list.size()) + "}");
+    }
+
+    // 15. Persistent Memory
+    if (capability_id == "memory.store") {
+        if (!memory_provider_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Memory provider unavailable");
+        contracts::MemoryItem item;
+        item.id = "mem_" + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        item.content = extract_json_field(arguments_json, "content");
+        item.key = extract_json_field(arguments_json, "key");
+        item.source = context.actor_id;
+        auto res = memory_provider_->store(item);
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        return contracts::Result<std::string>::success("{\"status\": \"stored\", \"id\": \"" + item.id + "\"}");
+    }
+    if (capability_id == "memory.search" || capability_id == "memory.query" || capability_id == "memory.recall") {
+        if (!memory_provider_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Memory provider unavailable");
+        contracts::MemoryQuery q;
+        q.text_query = extract_json_field(arguments_json, "query");
+        auto res = memory_provider_->query(q);
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        std::string json = "{\"results\": [";
+        for (size_t i = 0; i < res.value().size(); ++i) {
+            if (i > 0) json += ", ";
+            json += "{\"id\": \"" + res.value()[i].id + "\", \"key\": \"" + res.value()[i].key + "\", \"content\": \"" + res.value()[i].content + "\"}";
+        }
+        json += "]}";
+        return contracts::Result<std::string>::success(json);
+    }
+    if (capability_id == "memory.forget") {
+        if (!memory_provider_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Memory provider unavailable");
+        std::string mem_id = extract_json_field(arguments_json, "id");
+        auto res = memory_provider_->forget(mem_id);
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        return contracts::Result<std::string>::success("{\"status\": \"forgotten\", \"id\": \"" + mem_id + "\"}");
+    }
+
+    // 16. Real Weather Tool
+    if (capability_id == "weather.get") {
+        std::string location = extract_json_field(arguments_json, "location");
+        if (location.empty() || location == "{}") location = "auto";
+        auto fetch_res = adapters::network::HttpClient::get("https://wttr.in/" + location + "?format=3", 5000);
+        if (!fetch_res.is_success()) return contracts::Result<std::string>::failure(fetch_res.error());
+        return contracts::Result<std::string>::success("{\"weather\": \"" + fetch_res.value().body + "\"}");
+    }
+
+    // 17. Real Web Search Tool
+    if (capability_id == "web.search") {
+        std::string query = extract_json_field(arguments_json, "query");
+        std::string encoded;
+        for (char c : query) {
+            if (isalnum(static_cast<unsigned char>(c))) encoded += c;
+            else if (c == ' ') encoded += "+";
+        }
+        auto fetch_res = adapters::network::HttpClient::get(
+            "https://en.wikipedia.org/w/api.php?action=opensearch&search=" + encoded + "&limit=3&namespace=0&format=json",
+            6000
+        );
+        if (!fetch_res.is_success()) return contracts::Result<std::string>::failure(fetch_res.error());
+        return contracts::Result<std::string>::success(fetch_res.value().body);
+    }
+
+    // 18. Media / YouTube Search & Play
+    if (capability_id == "media.youtube.play") {
+        std::string target = extract_json_field(arguments_json, "target");
+        if (target.empty()) target = extract_json_field(arguments_json, "query");
+        std::string url;
+        if (target.starts_with("http://") || target.starts_with("https://")) {
+            url = target;
+        } else {
+            std::string encoded;
+            for (char c : target) {
+                if (isalnum(static_cast<unsigned char>(c))) encoded += c;
+                else if (c == ' ') encoded += "+";
+            }
+            url = "https://www.youtube.com/results?search_query=" + encoded;
+        }
+        if (browser_manager_) {
+            auto s_res = browser_manager_->open_browser(context.task_id);
+            if (s_res.is_success()) {
+                browser_manager_->navigate(s_res.value().session_id, url);
+            }
+        }
+        return contracts::Result<std::string>::success("{\"status\": \"opened_youtube\", \"url\": \"" + url + "\"}");
+    }
+
+    // 19. Browser Page Content & Text Extraction
+    if (capability_id == "browser.extract_text") {
+        if (!browser_manager_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Browser manager unavailable");
+        std::string sess_id = extract_json_field(arguments_json, "session_id");
+        if (sess_id.empty() || sess_id == "{}") {
+            auto sessions = browser_manager_->list_sessions();
+            if (!sessions.empty()) sess_id = sessions.back().session_id;
+        }
+        auto res = browser_manager_->extract_text(sess_id, "");
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        return contracts::Result<std::string>::success(res.value());
+    }
+
+    // 20. Smart Reminders & Scheduler
+    if (capability_id == "reminder.create" || capability_id == "scheduler.schedule") {
+        if (!scheduler_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Scheduler unavailable");
+        std::string message = extract_json_field(arguments_json, "message");
+        if (message.empty()) message = extract_json_field(arguments_json, "text");
+        if (message.empty()) message = "VANI Reminder";
+
+        std::string delay_str = extract_json_field(arguments_json, "delay_seconds");
+        if (delay_str.empty()) delay_str = extract_json_field(arguments_json, "seconds");
+        uint64_t delay_sec = 60;
+        try { if (!delay_str.empty()) delay_sec = std::stoull(delay_str); } catch (...) {}
+
+        contracts::TaskSpecification task_spec;
+        task_spec.title = "Reminder: " + message;
+        task_spec.description = message;
+        task_spec.requested_capabilities = {"system.notification.send"};
+        task_spec.required_permissions = {"system.notification.send"};
+        task_spec.assigned_agent_id = "agent.planner";
+
+        auto sched_res = scheduler_->schedule_after(task_spec, delay_sec * 1000);
+        if (!sched_res.is_success()) return contracts::Result<std::string>::failure(sched_res.error());
+
+        return contracts::Result<std::string>::success("{\"status\": \"scheduled\", \"job_id\": \"" + sched_res.value() + "\", \"delay_seconds\": " + std::to_string(delay_sec) + ", \"message\": \"" + message + "\"}");
+    }
+    if (capability_id == "reminder.list" || capability_id == "scheduler.list") {
+        if (!scheduler_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Scheduler unavailable");
+        auto jobs = scheduler_->list_jobs();
+        std::string json = "{\"jobs\": [";
+        for (size_t i = 0; i < jobs.size(); ++i) {
+            if (i > 0) json += ", ";
+            json += "{\"job_id\": \"" + jobs[i].job_id + "\", \"title\": \"" + jobs[i].task_spec.title + "\", \"target_time_ms\": " + std::to_string(jobs[i].target_time_ms) + ", \"is_enabled\": " + (jobs[i].is_enabled ? "true" : "false") + "}";
+        }
+        json += "]}";
+        return contracts::Result<std::string>::success(json);
+    }
+    if (capability_id == "reminder.cancel" || capability_id == "scheduler.cancel") {
+        if (!scheduler_) return contracts::Result<std::string>::failure(contracts::ErrorCode::Unavailable, "Scheduler unavailable");
+        std::string job_id = extract_json_field(arguments_json, "job_id");
+        if (job_id.empty()) job_id = extract_json_field(arguments_json, "id");
+        auto res = scheduler_->cancel_job(job_id);
+        if (!res.is_success()) return contracts::Result<std::string>::failure(res.error());
+        return contracts::Result<std::string>::success("{\"status\": \"cancelled\", \"job_id\": \"" + job_id + "\"}");
     }
 
     return contracts::Result<std::string>::failure(
